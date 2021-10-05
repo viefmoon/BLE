@@ -12,8 +12,8 @@
 //Slave id
 #define slave_id 1
 //MAC to SET on slave
-uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF1}; 
-//uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF2}; 
+//uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF1}; 
+uint8_t SlaveNewMACAddress[] = {0xAA, 0xFF, 0xFF, 0xFF, 0xFF, 0xF1}; 
 //uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF3}; 
 //uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF4}; 
 //uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF5}; 
@@ -21,7 +21,7 @@ uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF1};
 //uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF7}; 
 
 //Master MAC
-uint8_t MasterAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};//ESP32 CON SIM}
+uint8_t MasterAddress[] = {0xAA, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};//ESP32 CON SIM}
 
 int scanTime = 1; //In seconds
 BLEScan* pBLEScan;
@@ -33,55 +33,46 @@ struct struct_message {
 };
 struct_message msg;
 
-
 // callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 Serial.print("\r\nLast Packet Send Status:\t");
 Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
 }
 
-void SetNewMAC(){
-  esp_wifi_set_mac(WIFI_IF_STA, &SlaveNewMACAddress[0]);
-}
-
 class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) {
     String data = advertisedDevice.toString().c_str();
     if(data != NULL){
-    char aux_data[12];
-    char rssi[3];
-    strncpy(aux_data, data.c_str(), sizeof(aux_data));
-    aux_data[sizeof(aux_data) - 1] = 0;
+      char aux_data[12];
+      char rssi[3];
+      strncpy(aux_data, data.c_str(), sizeof(aux_data));
+      aux_data[sizeof(aux_data) - 1] = 0;
 
-    for (size_t i = 0; i < 8; i++)
-    {
-      msg.uuid_[i] = aux_data[i];
-    }
-    for (size_t i = 0; i < 3; i++)
-    {
-      rssi[i] = aux_data[i+9];
-    }
+      for (size_t i = 0; i < 8; i++)
+      {
+        msg.uuid_[i] = aux_data[i];
+      }
+      for (size_t i = 0; i < 3; i++)
+      {
+        rssi[i] = aux_data[i+9];
+      }
 
-    msg.rrsi_ = atoi(rssi);
-    
-    Serial.print(msg.uuid_[0]);
-    Serial.print(msg.uuid_[1]);
-    Serial.print(msg.uuid_[2]);
-    Serial.print(msg.uuid_[3]);
-    Serial.print(msg.uuid_[4]);
-    Serial.print(msg.uuid_[5]);
-    Serial.print(msg.uuid_[6]);
-    Serial.println(msg.uuid_[7]);
+      msg.rrsi_ = atoi(rssi);
 
-    Serial.println(msg.rrsi_);
-      // Send message via ESP-NOW
-    esp_err_t result = esp_now_send(MasterAddress, (uint8_t *) &msg, sizeof(msg));
-    if (result == ESP_OK) {
-      Serial.println("Sent with success");
-    }
-    else {
-      Serial.println("Error sending the data");
-    }
+      char a[3];
+      a[0] = msg.uuid_[0];
+      a[1] = msg.uuid_[1];
+      a[2] = '\0';
+
+      if (strcmp(a, "aa") == 0) {
+        esp_err_t result = esp_now_send(MasterAddress, (uint8_t *) &msg, sizeof(msg));
+        if (result == ESP_OK) {
+          Serial.println("Sent with success");
+        }
+        else {
+          Serial.println("Error sending the data");
+        }
+      }
     }
   }
 };
@@ -92,7 +83,7 @@ void setup() {
 
   //Set device as a Wi-Fi Station
   WiFi.mode(WIFI_STA);
-  SetNewMAC();
+  esp_wifi_set_mac(ESP_IF_WIFI_STA, &SlaveNewMACAddress[0]);
 
   // Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
@@ -124,8 +115,6 @@ void setup() {
 }
 
 void loop() {
-  
   BLEScanResults foundDevices = pBLEScan->start(scanTime, false);
   pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
-
 }
