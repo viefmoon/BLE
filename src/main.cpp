@@ -11,25 +11,29 @@
 
 //Slave id
 #define slave_id 1
+#define first_c "aa"
+
+//calibration 
+#define MEASURE_RSSI 60
+#define n 2
+
+
 //MAC to SET on slave
 //uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF1}; 
 uint8_t SlaveNewMACAddress[] = {0xAA, 0xFF, 0xFF, 0xFF, 0xFF, 0xF1}; 
+//uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF2}; 
 //uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF3}; 
-//uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF4}; 
-//uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF5}; 
-//uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF6}; 
-//uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF7}; 
 
 //Master MAC
 uint8_t MasterAddress[] = {0xAA, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};//ESP32 CON SIM}
 
-int scanTime = 1; //In seconds
+uint8_t scanTime = 1; //In seconds
 BLEScan* pBLEScan;
 
 struct struct_message {
-    uint8_t id; // must be unique for each sender board
+    uint8_t id; // slave id
     char uuid_[8];
-    uint8_t rrsi_;
+    float distance;
 };
 struct_message msg;
 
@@ -45,6 +49,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
     if(data != NULL){
       char aux_data[12];
       char rssi[3];
+
       strncpy(aux_data, data.c_str(), sizeof(aux_data));
       aux_data[sizeof(aux_data) - 1] = 0;
 
@@ -57,14 +62,21 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
         rssi[i] = aux_data[i+9];
       }
 
-      msg.rrsi_ = atoi(rssi);
+      uint8_t rrsi_ = atoi(rssi);
 
+      msg.distance = pow(10, ((double) (rrsi_ - MEASURE_RSSI)) / (10 * n));
+      Serial.print("RSSI: ");
+      Serial.println(rrsi_);
+      Serial.print("Dist: ");
+      Serial.println(msg.distance);
+
+      //check first´s chars
       char a[3];
       a[0] = msg.uuid_[0];
       a[1] = msg.uuid_[1];
       a[2] = '\0';
 
-      if (strcmp(a, "aa") == 0) {
+      if (strcmp(a, first_c) == 0) {
         esp_err_t result = esp_now_send(MasterAddress, (uint8_t *) &msg, sizeof(msg));
         if (result == ESP_OK) {
           Serial.println("Sent with success");
@@ -91,7 +103,7 @@ void setup() {
   return;
   }
 
-  // Register function
+  // Register function on data sent
   esp_now_register_send_cb(OnDataSent);
   
   // Register peer
@@ -113,6 +125,7 @@ void setup() {
   pBLEScan->setInterval(100);
   pBLEScan->setWindow(99);  // less or equal setInterval value
 }
+
 
 void loop() {
   BLEScanResults foundDevices = pBLEScan->start(scanTime, false);
