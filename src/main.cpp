@@ -10,7 +10,7 @@
 #include <esp_wifi.h>
 
 //Slave id
-#define slave_id 1
+#define slave_id 0
 #define first_c "aa"
 
 //calibration 
@@ -33,7 +33,7 @@ BLEScan* pBLEScan;
 struct struct_message {
     uint8_t id; // slave id
     char uuid_[8];
-    float distance;
+    uint8_t rssi;
 };
 struct_message msg;
 
@@ -47,28 +47,29 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) {
     String data = advertisedDevice.toString().c_str();
     if(data != NULL){
+      delay(1000);
       char aux_data[12];
       char rssi[3];
 
       strncpy(aux_data, data.c_str(), sizeof(aux_data));
       aux_data[sizeof(aux_data) - 1] = 0;
 
+      Serial.print("UUID: ");
       for (size_t i = 0; i < 8; i++)
       {
         msg.uuid_[i] = aux_data[i];
+        Serial.print(msg.uuid_[i]);
       }
       for (size_t i = 0; i < 3; i++)
       {
         rssi[i] = aux_data[i+9];
       }
 
-      uint8_t rrsi_ = atoi(rssi);
+      msg.rssi = atoi(rssi);
 
-      msg.distance = pow(10, ((double) (rrsi_ - MEASURE_RSSI)) / (10 * n));
-      Serial.print("RSSI: ");
-      Serial.println(rrsi_);
-      Serial.print("Dist: ");
-      Serial.println(msg.distance);
+      //msg.distance = pow(10, ((double) (rrsi_ - MEASURE_RSSI)) / (10 * n));
+      Serial.print("  RSSI: ");
+      Serial.println(msg.rssi);
 
       //check first´s chars
       char a[3];
