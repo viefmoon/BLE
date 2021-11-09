@@ -13,14 +13,9 @@
 #define slave_id 0
 #define first_c "aa"
 
-//calibration 
-#define MEASURE_RSSI 60
-#define n 2
-
-
 //MAC to SET on slave
 //uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF1}; 
-uint8_t SlaveNewMACAddress[] = {0xAA, 0xFF, 0xFF, 0xFF, 0xFF, 0xF1}; 
+uint8_t SlaveNewMACAddress[] = {0xAA, 0xFF, 0xFF, 0xFF, 0xFF, 0xF0}; 
 //uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF2}; 
 //uint8_t SlaveNewMACAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF3}; 
 
@@ -32,34 +27,35 @@ BLEScan* pBLEScan;
 
 struct struct_message {
     uint8_t id; // slave id
-    char uuid_[8];
     uint8_t rssi;
+    char uuid_[9];
 };
 struct_message msg;
 
 // callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-Serial.print("\r\nLast Packet Send Status:\t");
-Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+//Serial.print("\r\nLast Packet Send Status:\t");
+//Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
 }
 
 class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) {
     String data = advertisedDevice.toString().c_str();
     if(data != NULL){
-      delay(1000);
+      delay(500);
       char aux_data[12];
       char rssi[3];
 
       strncpy(aux_data, data.c_str(), sizeof(aux_data));
       aux_data[sizeof(aux_data) - 1] = 0;
 
-      Serial.print("UUID: ");
-      for (size_t i = 0; i < 8; i++)
+      //Serial.print("UUID: ");
+      for (size_t i = 0; i < 9; i++)
       {
         msg.uuid_[i] = aux_data[i];
-        Serial.print(msg.uuid_[i]);
+        //Serial.print(msg.uuid_[i]);
       }
+      msg.uuid_[8] = '\0';
       for (size_t i = 0; i < 3; i++)
       {
         rssi[i] = aux_data[i+9];
@@ -68,8 +64,8 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
       msg.rssi = atoi(rssi);
 
       //msg.distance = pow(10, ((double) (rrsi_ - MEASURE_RSSI)) / (10 * n));
-      Serial.print("  RSSI: ");
-      Serial.println(msg.rssi);
+      //Serial.print("  RSSI: ");
+      //Serial.println(msg.rssi);
 
       //check first´s chars
       char a[3];
@@ -80,10 +76,10 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
       if (strcmp(a, first_c) == 0) {
         esp_err_t result = esp_now_send(MasterAddress, (uint8_t *) &msg, sizeof(msg));
         if (result == ESP_OK) {
-          Serial.println("Sent with success");
+          //Serial.println("Sent with success");
         }
         else {
-          Serial.println("Error sending the data");
+          //Serial.println("Error sending the data");
         }
       }
     }
@@ -91,7 +87,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 };
 
 void setup() {
-  Serial.begin(115200);
+  //Serial.begin(115200);
   msg.id = slave_id;
 
   //Set device as a Wi-Fi Station
@@ -100,7 +96,7 @@ void setup() {
 
   // Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
-    Serial.println("Error initializing ESP-NOW");
+    //Serial.println("Error initializing ESP-NOW");
   return;
   }
 
@@ -115,7 +111,7 @@ void setup() {
   
   // Add peer        
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add peer");
+    //Serial.println("Failed to add peer");
     return;
   }
 
