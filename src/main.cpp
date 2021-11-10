@@ -50,16 +50,17 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
       aux_data[sizeof(aux_data) - 1] = 0;
 
       //Serial.print("UUID: ");
-      for (size_t i = 0; i < 9; i++)
+      for (size_t i = 0; i < 8; i++)
       {
         msg.uuid_[i] = aux_data[i];
         //Serial.print(msg.uuid_[i]);
       }
-      msg.uuid_[8] = '\0';
-      for (size_t i = 0; i < 3; i++)
+      msg.uuid_[8] = 0;
+      for (size_t i = 0; i < 2; i++)
       {
         rssi[i] = aux_data[i+9];
       }
+      rssi[2] = 0;
 
       msg.rssi = atoi(rssi);
 
@@ -71,7 +72,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
       char a[3];
       a[0] = msg.uuid_[0];
       a[1] = msg.uuid_[1];
-      a[2] = '\0';
+      a[2] = 0;
 
       if (strcmp(a, first_c) == 0) {
         esp_err_t result = esp_now_send(MasterAddress, (uint8_t *) &msg, sizeof(msg));
