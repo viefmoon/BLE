@@ -98,7 +98,7 @@ void setup() {
   // Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
     //Serial.println("Error initializing ESP-NOW");
-  return;
+    return;
   }
 
   // Register function on data sent
